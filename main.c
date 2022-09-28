@@ -3,16 +3,12 @@
 #include <string.h>
 #include <errno.h>
 #include <stdbool.h>
-#include <assert.h>
-#include <pthread.h>
 #include <unistd.h>
 #include "words/words.h"
 #include "threads/threads.h"
 
-static int MAX_THREADS = 16;
+static int MAX_THREADS = 32;
 static int WORDS_PER_THREAD = 64;
-
-extern thread_manager_t thread_manager;
 
 // Count of all words
 static int word_count = 0;
@@ -84,6 +80,7 @@ void* thread(void *arg) {
     }
 
     thread_manager.thread_count--;
+    data->running = false;
 
     if (thread_manager.thread_count == 0) {
         pthread_cond_signal(&thread_manager.all_threads_finished);
@@ -112,43 +109,46 @@ int main(int argc, char *argv[]) {
     thread_manager_init(MAX_THREADS);
 
     printf("max_threads=%d, words_per_thread=%d\n", MAX_THREADS, WORDS_PER_THREAD);
+    printf("%lu\n", sizeof(thread_arg_t));
 
-    int chunk = 0;
-    mutex_lock();
-    for (int i = 0; i < MAX_THREADS; i++) {
-        thread_arg_t arg = {
-            .id = i,
-            .start = i * WORDS_PER_THREAD,
-            .end = (i + 1) * WORDS_PER_THREAD
-        };
+    /**
+     * The whole search space is divded into chunks now, since we're using
+     * WORDS_PER_THREAD. So next_chunk_id tells us what the next launched thread
+     * should investigate
+     */
+    int next_chunk_index = 0;
 
-        if (arg.start >= word_count) {
-            break;
-        }
-
-        if (arg.end >= word_count) {
-            arg.end = word_count;
-        }
-
-        create_thread(arg, thread);
-        chunk++;
-    }
-    mutex_unlock();
-
-    while (true) {
+    /**
+     * Indicates wether or not we're interested in waiting for threads to finish
+     * If we are interested, it means we have more jobs to do, and we want to create
+     * new threads
+     */
+    bool there_are_combinations_left = true;
+    while (there_are_combinations_left) {
+        // Waits for threads to become available, which on the first iteration will be
+        // immediately
         mutex_wait_for_thread_availability();
 
-        bool finished = false;
-        // Can create another thread! Or multiple
+        /**
+         * Critical section. Creating new threads and updating the thread count.
+         * Create as many threads as possible on this iteration.
+         * 
+         * On the first iteration, max_threads will be created, on every next iteration
+         * we'll see. Probably only 1 thread at a time, but perhaps more.
+         */
         for (int i = thread_manager.thread_count; i < thread_manager.max_threads; i++) {
             thread_arg_t arg = {
-                .id = chunk,
-                .start = chunk * WORDS_PER_THREAD,
-                .end = (chunk + 1) * WORDS_PER_THREAD
+                .id = next_chunk_index,
+                // .running should be here but create_thread does it for us
+                .start = next_chunk_index * WORDS_PER_THREAD,
+                .end = (next_chunk_index + 1) * WORDS_PER_THREAD
             };
 
+            // The thread we were about to create would not have anything to check
+            // We're done creating threads and checking combinations!
             if (arg.start >= word_count) {
-                finished = true;
+                there_are_combinations_left = false;
+                break;
             }
 
             if (arg.end >= word_count) {
@@ -156,14 +156,10 @@ int main(int argc, char *argv[]) {
             }
 
             create_thread(arg, thread);
-            chunk++;
+            next_chunk_index++;
         }
 
         mutex_unlock();
-
-        if (finished) {
-            break;
-        }
     }
 
     mutex_wait_for_all_threads_to_finish();

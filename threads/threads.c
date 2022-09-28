@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "threads.h"
 
 thread_manager_t thread_manager = {0};
@@ -21,6 +22,12 @@ void mutex_unlock() {
 void thread_manager_init(int max_threads) {
     thread_manager.thread_count = 0;
     thread_manager.max_threads = max_threads;
+    thread_manager.thread_args = (thread_arg_t *) calloc(max_threads, sizeof(thread_arg_t));
+    if (thread_manager.thread_args == NULL) {
+        perror("calloc");
+        exit(EXIT_FAILURE);
+    }
+    memset(thread_manager.thread_args, 0, max_threads * sizeof(thread_arg_t));
 
     if (pthread_mutex_init(&thread_manager.mutex, NULL) == -1) {
         perror("pthread_mutex_init");
@@ -38,27 +45,29 @@ void thread_manager_init(int max_threads) {
     }
 }
 
-/**
- * Creates a thread. MUST BE CALLED after acquiring a mutex lock
- * since this function operates on the shared `thread_manager` variable.
- * 
- * @param arg - Argument to be passed to the thread. Will be copied to the heap.
- * @param thread - A function pointer.
- * @return pthread_t
- */
 pthread_t create_thread(thread_arg_t arg, void *thread(void *)) {
-    // Copy of the thread argument on the heap
-    thread_arg_t *arg_copy = (thread_arg_t *) malloc(sizeof(thread_arg_t));
-    if (arg_copy == NULL) {
-        perror("malloc");
+    // Some thread finished, we can use this part of the heap now.
+    thread_arg_t *free_thread_arg = NULL;
+    for (int i = 0; i < thread_manager.max_threads; i++) {
+        // Is your thread running? Well you beter catch it then :)
+        if (!thread_manager.thread_args[i].running) {
+            free_thread_arg = &(thread_manager.thread_args[i]);
+            break;
+        }
+    }
+
+    if (free_thread_arg == NULL) {
+        printf("Could not find space for a thread\n");
         exit(EXIT_FAILURE);
     }
 
-    memcpy(arg_copy, &arg, sizeof(thread_arg_t));
+    // Before copying into the heap, mark it as running
+    arg.running = true;
+    memcpy(free_thread_arg, &arg, sizeof(thread_arg_t));
     thread_manager.thread_count++;
 
     pthread_t tid;
-    if (pthread_create(&tid, NULL, thread, arg_copy) == -1) {
+    if (pthread_create(&tid, NULL, thread, free_thread_arg) == -1) {
         perror(NULL);
         exit(EXIT_FAILURE);
     }
@@ -66,10 +75,6 @@ pthread_t create_thread(thread_arg_t arg, void *thread(void *)) {
     return tid;
 }
 
-/**
- * Awaits until another thread can be created.
- * This method acquires but doesn't release a mutex lock.
- */
 void mutex_wait_for_thread_availability() {
     mutex_lock();
     while (thread_manager.thread_count == thread_manager.max_threads) {
@@ -77,9 +82,6 @@ void mutex_wait_for_thread_availability() {
     }
 }
 
-/**
- * Waits for all threads to finish.
- */
 void mutex_wait_for_all_threads_to_finish() {
     mutex_lock();
     while (thread_manager.thread_count != 0) {
