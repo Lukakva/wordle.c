@@ -1,2 +1,2 @@
 main:
-	gcc main.c words/words.c threads/threads.c -o main -O3 -lpthread
+	gcc src/main.c src/words/words.c src/threads/threads.c -o main -O3 -lpthread

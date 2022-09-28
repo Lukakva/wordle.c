@@ -1,9 +1,6 @@
 #include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <stdbool.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include "words/words.h"
 #include "threads/threads.h"
 
@@ -14,7 +11,7 @@ static int WORDS_PER_THREAD = 64;
 static int word_count = 0;
 static word_t *all_words = NULL;
 
-void* thread(void *arg) {
+static void* thread(void *arg) {
     thread_arg_t *data = (thread_arg_t *) arg;
 
     for (int i = data->start; i < data->end; i++) {
@@ -90,7 +87,7 @@ void* thread(void *arg) {
     return NULL;
 }
 
-void parse_options(int argc, char *argv[]) {
+static void parse_options(int argc, char *argv[]) {
     char ch;
     while ((ch = getopt(argc, argv, "t:w:")) != -1) {
         if (ch == 't') {

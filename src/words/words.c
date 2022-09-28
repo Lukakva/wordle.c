@@ -7,64 +7,68 @@
 
 // Reallocate 128 items per realloc() call
 #define WORDS_PER_ALLOC 128
-#define MAX_WORDS ((1 << 27) - 1)
+
+/**
+ * Since we're representing words as bitfields,
+ * the largest possible value a 5 digit word can achieve for a bitfield
+ * is 'VWXYZ' which would set all of the last 5 bits to 1
+ * therefore that's the largest possible index into our anagrams array.
+ * So in total, 26 bits, left 5 set to 1.
+ */
+#define MAX_WORDS (0b11111 << 21)
+
+/**
+ * A bitmask of all vowels together (including Y).
+ */
+#define VOWELS_MASK 0b00000001000100000100000100010001
 
 static bool anagrams[MAX_WORDS];
 
+/**
+ * Calculates number of set bits (1s) in a number.
+ * Brian Kernighan's Algorithm.
+ * 
+ * @param n The number.
+ * @return uint8_t
+ */
 static uint8_t number_of_bits(uint32_t n) {
     uint8_t result = 0;
 
-    while (n > 0) {
-        result += n & 1;
-        n >>= 1;
+    while (n) {
+        n = n & (n - 1);
+        result++;
     }
 
     return result;
 }
 
+/**
+ * Creates a bitfield which holds information about
+ * which characters the word uses.
+ *
+ * Since there are 26 characters in the English alphabet, a 32bit
+ * number can hold information about what characters are used in a word.
+ * a = 1st bit set to 1
+ * b = 2nd bit set to 1
+ * c = 3rd bit set to 1
+ * ...
+ * 
+ * @param word a string
+ * @return uint32_t
+ */
 static uint32_t numeric_representation(char *word) {
     uint32_t number = 0;
 
     char c;
     while ((c = *word) != '\0')
     {
-        // index in the alphabet
-        uint8_t index = 0;
-        if (isupper(c))
-        {
-            index = c - 65;
-        }
-        else
-        {
-            index = c - 97;
-        }
-
-        number |= 1 << index;
+        // c - 97 is the index of this character in the alphabet, 0-25
+        // set that bit to 1
+        number |= 1 << (c - 97);
         word++;
     }
 
     return number;
-}
-
-static uint8_t number_of_vowels(uint32_t word_num) {
-    uint8_t count = 0;
-    static uint32_t vowels[] = {
-        1 << 0, // A
-        1 << 4, // E
-        1 << 8, // I
-        1 << 14, // O
-        1 << 20, // U
-        1 << 24, // Y
-        0, // Ending
-    };
-    
-    uint32_t *vowel = vowels;
-    while (*vowel != 0) {
-        count += (word_num & *vowel) != 0;
-        vowel++;
-    }
-
-    return count;
 }
 
 static bool should_keep_word(uint32_t word_num) {
@@ -74,10 +78,11 @@ static bool should_keep_word(uint32_t word_num) {
     }
     
     // Number of vowels
-    if (number_of_vowels(word_num) >= 3) {
+    if (number_of_bits(word_num & VOWELS_MASK) >= 3) {
         return false;
     }
 
+    // Two words with the same numeric representation are anagrams
     if (anagrams[word_num] == true) {
         return false;
     }
@@ -88,8 +93,7 @@ static bool should_keep_word(uint32_t word_num) {
 
 void load_words(word_t **all_words, int *word_count) {
     FILE *file = fopen("words.txt", "r");
-    if (file == NULL)
-    {
+    if (file == NULL) {
         perror("Error opening file: ");
         exit(EXIT_FAILURE);
     }
@@ -99,8 +103,7 @@ void load_words(word_t **all_words, int *word_count) {
     size_t lineSize = 0;
 
     word_t *words = (word_t *) malloc(WORDS_PER_ALLOC * sizeof(word_t));
-    if (words == NULL)
-    {
+    if (words == NULL) {
         perror(NULL);
         exit(EXIT_FAILURE);
     }
@@ -112,10 +115,8 @@ void load_words(word_t **all_words, int *word_count) {
     // How many pointers we have allocated, not bytes, pointers
     // basically, how many strings can this array hold so far
     int allocated = WORDS_PER_ALLOC;
-    while ((nread = getline(&line, &lineSize, file)) != -1)
-    {
-        if (line[nread - 1] == '\n')
-        {
+    while ((nread = getline(&line, &lineSize, file)) != -1) {
+        if (line[nread - 1] == '\n') {
             line[nread - 1] = '\0';
         }
 
@@ -126,9 +127,8 @@ void load_words(word_t **all_words, int *word_count) {
         }
 
         // We're about to include this word as well
-        if (i >= allocated)
-        {
-            // allocate another chunk of strings
+        if (i >= allocated) {
+            // allocate another chunk of words
             words = realloc(words, (allocated + WORDS_PER_ALLOC) * sizeof(word_t));
             if (words == NULL) {
                 perror(NULL);
@@ -145,10 +145,16 @@ void load_words(word_t **all_words, int *word_count) {
         words[i].allowed_words = NULL;
         words[i].allowed_words_n = 0;
 
+        if (words[i].str == NULL) {
+            perror("strdup");
+            exit(EXIT_FAILURE);
+        }
+
         i++;
     }
 
     free(line);
+
     words[i].str = NULL; // Mark the end of the words
     words[i].numeric = 0;
     words[i].allowed_words = NULL;
@@ -157,6 +163,14 @@ void load_words(word_t **all_words, int *word_count) {
     *all_words = words;
     *word_count = i;
 
+    /**
+     * Section below does the following:
+     * For every word W, creates an array that stores indexes of
+     * every other words that have 0 character overlap with W.
+     * This way, when we're trying out all the combinations where
+     * W is present, we can efficiently try out words that definitely
+     * work with W.
+     */
     int total = i;
     for (int i = 0; i < total; i++) {
         uint16_t *possibles = (uint16_t *) malloc((total - i - 1) * sizeof(uint16_t));
@@ -167,10 +181,12 @@ void load_words(word_t **all_words, int *word_count) {
 
         int n = 0;
         for (int j = i + 1; j < total; j++) {
+            // If there is a bitwise overlap, they share a character
             if (words[i].numeric & words[j].numeric) {
                 continue;
             }
 
+            // Store the index of the compatible word
             possibles[n++] = (uint16_t) j;
         }
 
