@@ -109,7 +109,6 @@ int main(int argc, char *argv[]) {
     thread_manager_init(MAX_THREADS);
 
     printf("max_threads=%d, words_per_thread=%d\n", MAX_THREADS, WORDS_PER_THREAD);
-    printf("%lu\n", sizeof(thread_arg_t));
 
     /**
      * The whole search space is divded into chunks now, since we're using
