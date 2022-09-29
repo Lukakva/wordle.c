@@ -1,16 +1,24 @@
 #include "words/words.h"
 #include "threads/threads.h"
+#include <math.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <sys/time.h>
 
-static int MAX_THREADS = 32;
-static int WORDS_PER_THREAD = 64;
+/**
+ * These values are determined from the `time.js` / `time.txt` output.
+ * These work the best for my 8 core machine.
+ */
+static int MAX_THREADS = 8;
+static int WORDS_PER_THREAD = 24;
 
-// Count of all words
+// Count of all words that we're working with
 static int word_count = 0;
 static word_t *all_words = NULL;
+// Count of all words that were in the words file (just for fun)
+static int words_encountered = 0;
 
 static void* thread(void *arg) {
     thread_arg_t *data = (thread_arg_t *) arg;
@@ -78,7 +86,7 @@ static void* thread(void *arg) {
                         }
 
                         printf(
-                            "thread #%d\t[%d-%d]\t: %s %s %s %s %s\n",
+                            "thread #%03d   chunk[%04d-%04d]: %s %s %s %s %s\n",
                             data->id,
                             data->start,
                             data->end,
@@ -135,26 +143,38 @@ static void print_number(unsigned long long int n) {
 }
 
 int main(int argc, char *argv[]) {
+    struct timespec start, end;
+    clock_gettime(CLOCK_REALTIME, &start);
+
     parse_options(argc, argv);
-    load_words(&all_words, &word_count);
+    load_words(&all_words, &word_count, &words_encountered);
     thread_manager_init(MAX_THREADS);
 
-    printf("max_threads=%d, words_per_thread=%d\n", MAX_THREADS, WORDS_PER_THREAD);
+    printf(
+        "using %d words out of the %d total words in the file.\n",
+         word_count,
+         words_encountered
+    );
+
+    printf(
+        "starting processing: max_threads = %d, words_per_thread = %d\n",
+        MAX_THREADS,
+        WORDS_PER_THREAD
+    );
+
+    putchar('\n');
 
     /**
-     * The whole search space is divded into chunks now, since we're using
-     * WORDS_PER_THREAD. So next_chunk_id tells us what the next launched thread
-     * should investigate
+     * The whole search space is divided into chunks now, since we're using
+     * WORDS_PER_THREAD.
+     * Each thread gets passed a chunk to process, size of WORDS_PER_THREAD.
+     * So we want to process all chunks an we want to keep
+     * re-creating threads until all chunks are processed.
      */
     int next_chunk_index = 0;
+    int total_chunks = (int) ceil((double) word_count / (double) WORDS_PER_THREAD);
 
-    /**
-     * Indicates wether or not we're interested in waiting for threads to finish
-     * If we are interested, it means we have more jobs to do, and we want to create
-     * new threads
-     */
-    bool there_are_combinations_left = true;
-    while (there_are_combinations_left) {
+    while (next_chunk_index < total_chunks) {
         // Waits for threads to become available, which on the first iteration will be
         // immediately
         mutex_wait_for_thread_availability();
@@ -174,19 +194,17 @@ int main(int argc, char *argv[]) {
                 .end = (next_chunk_index + 1) * WORDS_PER_THREAD
             };
 
-            // The thread we were about to create would not have anything to check
-            // We're done creating threads and checking combinations!
-            if (arg.start >= word_count) {
-                there_are_combinations_left = false;
-                break;
-            }
-
+            // Last chunk
             if (arg.end >= word_count) {
                 arg.end = word_count;
             }
 
             create_thread(arg, thread);
             next_chunk_index++;
+
+            if (next_chunk_index == total_chunks) {
+                break;
+            }
         }
 
         mutex_unlock();
@@ -194,10 +212,15 @@ int main(int argc, char *argv[]) {
 
     mutex_wait_for_all_threads_to_finish();
     mutex_unlock();
+    cleanup_words(all_words, word_count);
 
-    printf("Iterations gone through: ");
+    clock_gettime(CLOCK_REALTIME, &end);
+
+    long delta = (end.tv_sec * 1E9 + end.tv_nsec) - (start.tv_sec * 1E9 + start.tv_nsec);
+
+    printf("\nFinished after ");
     print_number(thread_manager.work_done);
-    putchar('\n');
+    printf(" iterations in %.2f milliseconds\n", delta / 1E6F);
 
     return 0;
 }

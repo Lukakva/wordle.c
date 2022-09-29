@@ -28,5 +28,14 @@ typedef struct {
  * 
  * @param all_words Pointer to an array. A pointer to the allocated array will be put here. Like getline()
  * @param word_count Pointer to a number. Number of words will be put in here.
+ * @param words_encountered Pointer to a number. Number of total words read from a file will be put here.
  */
-void load_words(word_t **all_words, int *word_count);
+void load_words(word_t **all_words, int *word_count, int *words_encountered);
+
+/**
+ * Cleanup.
+ *
+ * @param all_words Array of all words.
+ * @param word_count Word count.
+ */
+void cleanup_words(word_t *all_words, int word_count);

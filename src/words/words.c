@@ -91,16 +91,12 @@ static bool should_keep_word(uint32_t word_num) {
     return true;
 }
 
-void load_words(word_t **all_words, int *word_count) {
+void load_words(word_t **all_words, int *word_count, int *words_encountered) {
     FILE *file = fopen("words.txt", "r");
     if (file == NULL) {
         perror("Error opening file: ");
         exit(EXIT_FAILURE);
     }
-
-    int nread;
-    char *line = NULL;
-    size_t lineSize = 0;
 
     word_t *words = (word_t *) malloc(WORDS_PER_ALLOC * sizeof(word_t));
     if (words == NULL) {
@@ -115,12 +111,18 @@ void load_words(word_t **all_words, int *word_count) {
     // How many pointers we have allocated, not bytes, pointers
     // basically, how many strings can this array hold so far
     int allocated = WORDS_PER_ALLOC;
+    // Total words encountered in a file, even unused ones
+    int total_words = 0;
+
+    int nread;
+    char *line = NULL;
+    size_t lineSize = 0;
     while ((nread = getline(&line, &lineSize, file)) != -1) {
         if (line[nread - 1] == '\n') {
             line[nread - 1] = '\0';
         }
-
         
+        total_words++;
         uint32_t numeric = numeric_representation(line);
         if (!should_keep_word(numeric)) {
             continue;
@@ -157,6 +159,9 @@ void load_words(word_t **all_words, int *word_count) {
     
     *all_words = words;
     *word_count = i;
+    if (words_encountered) {
+        *words_encountered = total_words;
+    }
 
     /**
      * Section below does the following:
@@ -188,4 +193,13 @@ void load_words(word_t **all_words, int *word_count) {
         words[i].neighbors = neighbors;
         words[i].neighbors_n = n;
     }
+}
+
+void cleanup_words(word_t *all_words, int word_count) {
+    for (int i = 0; i < word_count; i++) {
+        // Free up the strings
+        free(all_words[i].str);
+    }
+
+    free(all_words);
 }
