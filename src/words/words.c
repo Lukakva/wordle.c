@@ -1,9 +1,8 @@
+#include "words.h"
 #include <stdio.h>
 #include <ctype.h>
 #include <string.h>
-#include <stdlib.h>
 #include <stdbool.h>
-#include "words.h"
 
 // Reallocate 128 items per realloc() call
 #define WORDS_PER_ALLOC 128

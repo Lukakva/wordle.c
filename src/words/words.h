@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdint.h>
 
 /**
  * Represents a single word.

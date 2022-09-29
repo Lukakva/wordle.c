@@ -1,7 +1,6 @@
+#include "threads.h"
 #include <stdio.h>
 #include <string.h>
-#include <stdlib.h>
-#include "threads.h"
 
 thread_manager_t thread_manager = {0};
 

@@ -1,9 +1,9 @@
+#include "words/words.h"
+#include "threads/threads.h"
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
-#include <locale.h>
-#include "words/words.h"
-#include "threads/threads.h"
+#include <stdint.h>
 
 static int MAX_THREADS = 32;
 static int WORDS_PER_THREAD = 64;
