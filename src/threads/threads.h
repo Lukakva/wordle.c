@@ -27,6 +27,13 @@ typedef struct {
     /** Max number of threads. */
     uint16_t max_threads;
 
+    /**
+     * Just out of curiousity, how many iterations, comparisons
+     * or work has been done in total.
+     * Each thread, before terminating, logs its work done.
+     */
+    unsigned long long int work_done;
+
     /** Thread arguments */
     thread_arg_t *thread_args;
 

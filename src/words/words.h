@@ -14,10 +14,10 @@ typedef struct {
      * Array containing indexes of all the words that have no character
      * overlap with this word.
      */
-    uint16_t *allowed_words;
+    uint16_t *neighbors;
     
     /** Length of said array. */
-    uint16_t allowed_words_n;
+    uint16_t neighbors_n;
 } word_t;
 
 /**

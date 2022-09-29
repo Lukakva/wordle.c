@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <locale.h>
 #include "words/words.h"
 #include "threads/threads.h"
 
@@ -13,57 +14,79 @@ static word_t *all_words = NULL;
 
 static void* thread(void *arg) {
     thread_arg_t *data = (thread_arg_t *) arg;
+    unsigned long long int work_done = 0;
 
     for (int i = data->start; i < data->end; i++) {
-        int a = i;
+        // Grab the first word
+        word_t word_1 = all_words[i];
+        uint32_t n1 = word_1.numeric;
+        work_done++;
 
-        word_t a_word = all_words[a];
-        uint32_t A = a_word.numeric;
+        // Only iterate through the words that we know don't overlap with the first word
+        for (int j = 0; j < word_1.neighbors_n; j++) {
+            // Grab the index of the second word choice
+            int index_2 = word_1.neighbors[j];
+            // Retrieve that word
+            word_t word_2 = all_words[index_2];
+            uint32_t n2 = word_2.numeric;
+            work_done++;
 
-        for (int j = 0; j < a_word.allowed_words_n; j++) {
-            int b = a_word.allowed_words[j];
-            word_t b_word = all_words[b];
-            uint32_t B = b_word.numeric;
+            for (int k = 0; k < word_2.neighbors_n; k++) {
+                // Grab the index for the third word
+                int index_3 = word_2.neighbors[k];
 
-            for (int k = 0; k < b_word.allowed_words_n; k++) {
-                int c = b_word.allowed_words[k];
+                word_t word_3 = all_words[index_3];
+                uint32_t n3 = word_3.numeric;
+                work_done++;
 
-                word_t c_word = all_words[c];
-                uint32_t C = c_word.numeric;
-                if ((A & C) != 0) {
+                // Check if the first and the third word overlap in characters
+                if ((n1 & n3) != 0) {
                     continue;
                 }
 
-                uint32_t AB = A | B;
-                for (int l = 0; l < c_word.allowed_words_n; l++) {
-                    int d = c_word.allowed_words[l];
+                /**
+                 * Represents a union of the first and the second words,
+                 * Because in order to find a fourth word, we don't need
+                 * to check if the fourth word overlaps with the third one
+                 * since we're only going through the words that don't overlap
+                 * with the third one, but we do need to check if the 4th word
+                 * overlaps with either the first or the second.
+                 * Basically for any word at position `n` we know
+                 * it doesn't overlap with `n - 1`, but we have to check for (0..n-2).
+                 */
+                uint32_t n12 = n1 | n2;
+                for (int l = 0; l < word_3.neighbors_n; l++) {
+                    int index_4 = word_3.neighbors[l];
 
-                    word_t d_word = all_words[d];
-                    uint32_t D = d_word.numeric;
-                    if ((AB & D) != 0) {
+                    word_t word_4 = all_words[index_4];
+                    uint32_t n4 = word_4.numeric;
+                    work_done++;
+
+                    if ((n12 & n4) != 0) {
                         continue;
                     }
 
-                    uint32_t ABC = AB | C;
-                    for (int m = 0; m < d_word.allowed_words_n; m++) {
-                        int e = d_word.allowed_words[m];
+                    uint32_t n123 = n12 | n3;
+                    for (int m = 0; m < word_4.neighbors_n; m++) {
+                        int index_5 = word_4.neighbors[m];
+                        word_t word_5 = all_words[index_5];
+                        uint32_t n5 = word_5.numeric;
+                        work_done++;
 
-                        word_t e_word = all_words[e];
-                        uint32_t E = e_word.numeric;
-                        if ((ABC & E) != 0) {
+                        if ((n123 & n5) != 0) {
                             continue;
                         }
 
                         printf(
-                            "thread #%d [%d-%d]\t: %s %s %s %s %s\n",
+                            "thread #%d\t[%d-%d]\t: %s %s %s %s %s\n",
                             data->id,
                             data->start,
                             data->end,
-                            a_word.str,
-                            b_word.str,
-                            c_word.str,
-                            d_word.str,
-                            e_word.str
+                            word_1.str,
+                            word_2.str,
+                            word_3.str,
+                            word_4.str,
+                            word_5.str
                         );
                     }
                 }
@@ -77,6 +100,7 @@ static void* thread(void *arg) {
     }
 
     thread_manager.thread_count--;
+    thread_manager.work_done += work_done;
     data->running = false;
 
     if (thread_manager.thread_count == 0) {
@@ -98,6 +122,16 @@ static void parse_options(int argc, char *argv[]) {
             WORDS_PER_THREAD = atoi(optarg);
         }
     }
+}
+
+static void print_number(unsigned long long int n) {
+    if (n < 1000) {
+        printf("%llu", n);
+        return;
+    }
+
+    print_number(n / 1000);
+    printf(",%03llu", n % 1000);
 }
 
 int main(int argc, char *argv[]) {
@@ -160,6 +194,10 @@ int main(int argc, char *argv[]) {
 
     mutex_wait_for_all_threads_to_finish();
     mutex_unlock();
+
+    printf("Iterations gone through: ");
+    print_number(thread_manager.work_done);
+    putchar('\n');
 
     return 0;
 }

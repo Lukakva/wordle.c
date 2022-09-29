@@ -142,8 +142,8 @@ void load_words(word_t **all_words, int *word_count) {
         
         words[i].str = strdup(line);
         words[i].numeric = numeric;
-        words[i].allowed_words = NULL;
-        words[i].allowed_words_n = 0;
+        words[i].neighbors = NULL;
+        words[i].neighbors_n = 0;
 
         if (words[i].str == NULL) {
             perror("strdup");
@@ -154,11 +154,6 @@ void load_words(word_t **all_words, int *word_count) {
     }
 
     free(line);
-
-    words[i].str = NULL; // Mark the end of the words
-    words[i].numeric = 0;
-    words[i].allowed_words = NULL;
-    words[i].allowed_words_n = 0;
     
     *all_words = words;
     *word_count = i;
@@ -173,8 +168,8 @@ void load_words(word_t **all_words, int *word_count) {
      */
     int total = i;
     for (int i = 0; i < total; i++) {
-        uint16_t *possibles = (uint16_t *) malloc((total - i - 1) * sizeof(uint16_t));
-        if (possibles == NULL) {
+        uint16_t *neighbors = (uint16_t *) malloc((total - i - 1) * sizeof(uint16_t));
+        if (neighbors == NULL) {
             perror("malloc");
             exit(EXIT_FAILURE);
         }
@@ -187,10 +182,10 @@ void load_words(word_t **all_words, int *word_count) {
             }
 
             // Store the index of the compatible word
-            possibles[n++] = (uint16_t) j;
+            neighbors[n++] = (uint16_t) j;
         }
 
-        words[i].allowed_words = possibles;
-        words[i].allowed_words_n = n;
+        words[i].neighbors = neighbors;
+        words[i].neighbors_n = n;
     }
 }

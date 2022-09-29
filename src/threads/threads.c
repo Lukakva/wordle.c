@@ -22,6 +22,7 @@ void mutex_unlock() {
 void thread_manager_init(int max_threads) {
     thread_manager.thread_count = 0;
     thread_manager.max_threads = max_threads;
+    thread_manager.work_done = 0;
     thread_manager.thread_args = (thread_arg_t *) calloc(max_threads, sizeof(thread_arg_t));
     if (thread_manager.thread_args == NULL) {
         perror("calloc");
