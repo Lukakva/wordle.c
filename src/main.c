@@ -12,7 +12,7 @@
  * These work the best for my 8 core machine.
  */
 static int MAX_THREADS = 8;
-static int WORDS_PER_THREAD = 24;
+static int WORDS_PER_THREAD = 10;
 
 // Count of all words that we're working with
 static int word_count = 0;

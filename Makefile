@@ -11,4 +11,4 @@ main.o:
 	gcc -c src/main.c -o main.o -O3 
 
 clean:
-	rm *.o && rm wordle
+	rm -f *.o wordle
