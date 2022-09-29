@@ -3,22 +3,22 @@
 A **multi-threaded C-based** solution to Matt Parker's Wordle problem. Solves the problem in less than 2 seconds (On an M1 Pro).
 
 ```
-$ ./wordle -w 8 -t 10
+$ ./wordle
 using 4387 words out of the 12947 total words in the file.
-starting processing: max_threads = 10, words_per_thread = 8
+starting processing: max_threads = 8, words_per_thread = 10
 
-thread #039   chunk[0312-0320]: bemix clunk grypt vozhd waqfs
-thread #055   chunk[0440-0448]: blunk cimex grypt vozhd waqfs
-thread #051   chunk[0408-0416]: bling jumpy treck vozhd waqfs
-thread #068   chunk[0544-0552]: brick glent jumpy vozhd waqfs
-thread #071   chunk[0568-0576]: brung cylix kempt vozhd waqfs
-thread #103   chunk[0824-0832]: chunk fjord gymps vibex waltz
-thread #110   chunk[0880-0888]: clipt jumby kreng vozhd waqfs
-thread #202   chunk[1616-1624]: fjord gucks nymph vibex waltz
-thread #241   chunk[1928-1936]: glent jumby prick vozhd waqfs
-thread #050   chunk[2448-2456]: jumby pling treck vozhd waqfs
+thread #031   chunk[0310-0320]: bemix clunk grypt vozhd waqfs
+thread #044   chunk[0440-0450]: blunk cimex grypt vozhd waqfs
+thread #041   chunk[0410-0420]: bling jumpy treck vozhd waqfs
+thread #054   chunk[0540-0550]: brick glent jumpy vozhd waqfs
+thread #057   chunk[0570-0580]: brung cylix kempt vozhd waqfs
+thread #088   chunk[0880-0890]: clipt jumby kreng vozhd waqfs
+thread #082   chunk[0820-0830]: chunk fjord gymps vibex waltz
+thread #162   chunk[1620-1630]: fjord gucks nymph vibex waltz
+thread #193   chunk[1930-1940]: glent jumby prick vozhd waqfs
+thread #245   chunk[2450-2460]: jumby pling treck vozhd waqfs
 
-Finished after 11,844,572,947 iterations in 1667.94 milliseconds
+Finished after 11,844,572,947 iterations in 1672.35 milliseconds
 ```
 
 # Problem

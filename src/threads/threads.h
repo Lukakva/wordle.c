@@ -6,7 +6,7 @@
 /** An argument passed to a thread. */
 typedef struct {
     /** Thread ID. */
-    uint8_t id;
+    uint16_t id;
 
     /** Wether or not this thread is still running. */
     bool running;
