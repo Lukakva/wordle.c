@@ -9,20 +9,24 @@
 #define WORDS_PER_ALLOC 128
 
 /**
- * Since we're representing words as bitfields,
- * the largest possible value a 5 digit word can achieve for a bitfield
- * is 'VWXYZ' which would set all of the last 5 bits to 1
- * therefore that's the largest possible index into our anagrams array.
- * So in total, 26 bits, left 5 set to 1.
- */
-#define MAX_WORDS (0b11111 << 21)
-
-/**
  * A bitmask of all vowels together (including Y).
  */
 #define VOWELS_MASK 0b00000001000100000100000100010001
 
-static bool anagrams[MAX_WORDS];
+#define HASHMAP_SIZE 16 // 2^16 elements
+
+/**
+ * 5351 was randomly chosen and it worked!
+ * Multiply x by 5351 and take the last 16 bits.
+ * Then take the first 16 bits of x and XOR them with the result above.
+ */
+#define hash32(x) (uint16_t) (((x * 5351) & 0xffff) ^ ((x & 0xffff0000) >> 16))
+
+/**
+ * Used to filter out anagrams.
+ */
+static uint32_t hashmap[1 << HASHMAP_SIZE];
+static int collisions = 0;
 
 /**
  * Calculates number of set bits (1s) in a number.
@@ -82,16 +86,31 @@ static bool should_keep_word(uint32_t word_num) {
         return false;
     }
 
-    // Two words with the same numeric representation are anagrams
-    if (anagrams[word_num] == true) {
-        return false;
+    unsigned int hashmap_key = hash32(word_num);
+    // linear probing
+    while (hashmap_key < (1 << HASHMAP_SIZE)) {
+        // Empty space, store this number and keep the word
+        if (hashmap[hashmap_key] == 0) {
+            hashmap[hashmap_key] = word_num;
+            return true;
+        }
+
+        // Word was found in the hashmap
+        if (hashmap[hashmap_key] == word_num) {
+            // This word should not be kept, since there is an anagram for it already
+            return false;
+        }
+
+        // Keep searching, linear probing
+        hashmap_key++;
+        collisions++;
     }
 
-    anagrams[word_num] = true;
-    return true;
+    fprintf(stderr, "Failed to insert %d into a hashmap %u %u\n", word_num, hash32(word_num), hashmap_key);
+    exit(EXIT_FAILURE);
 }
 
-void load_words(word_t **all_words, int *word_count, int *words_encountered) {
+word_results_t load_words() {
     FILE *file = fopen("words.txt", "r");
     if (file == NULL) {
         perror("Error opening file: ");
@@ -105,7 +124,7 @@ void load_words(word_t **all_words, int *word_count, int *words_encountered) {
     }
 
     memset(words, 0, WORDS_PER_ALLOC * sizeof(word_t));
-    memset(anagrams, 0, MAX_WORDS * sizeof(bool));
+    memset(hashmap, 0, sizeof(hashmap));
 
     int i = 0;
     // How many pointers we have allocated, not bytes, pointers
@@ -156,12 +175,6 @@ void load_words(word_t **all_words, int *word_count, int *words_encountered) {
     }
 
     free(line);
-    
-    *all_words = words;
-    *word_count = i;
-    if (words_encountered) {
-        *words_encountered = total_words;
-    }
 
     /**
      * Section below does the following:
@@ -193,6 +206,15 @@ void load_words(word_t **all_words, int *word_count, int *words_encountered) {
         words[i].neighbors = neighbors;
         words[i].neighbors_n = n;
     }
+
+    word_results_t results = {
+        .all_words = words,
+        .word_count = total,
+        .words_encountered = total_words,
+        .collisions = collisions
+    };
+
+    return results;
 }
 
 void cleanup_words(word_t *all_words, int word_count) {

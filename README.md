@@ -3,20 +3,23 @@
 A **multi-threaded C-based** solution to Matt Parker's Wordle problem. Solves the problem in less than 2 seconds (On an M1 Pro).
 
 ```
-$ ./wordle
-using 4387 words out of the 12947 total words in the file.
-starting processing: max_threads = 8, words_per_thread = 10
+$ ./wordle -t 10 -w 8
+Loading words done...
+Encountered 218 hashmap collisions while filtering out anagrams.
+Left with 4387 usable words out of the 12947 total words in the file.
 
-thread #031   chunk[0310-0320]: bemix clunk grypt vozhd waqfs
-thread #044   chunk[0440-0450]: blunk cimex grypt vozhd waqfs
-thread #041   chunk[0410-0420]: bling jumpy treck vozhd waqfs
-thread #054   chunk[0540-0550]: brick glent jumpy vozhd waqfs
-thread #057   chunk[0570-0580]: brung cylix kempt vozhd waqfs
-thread #088   chunk[0880-0890]: clipt jumby kreng vozhd waqfs
-thread #082   chunk[0820-0830]: chunk fjord gymps vibex waltz
-thread #162   chunk[1620-1630]: fjord gucks nymph vibex waltz
-thread #193   chunk[1930-1940]: glent jumby prick vozhd waqfs
-thread #245   chunk[2450-2460]: jumby pling treck vozhd waqfs
+Starting processing: max_threads = 10, words_per_thread = 8
+
+thread #039   chunk[0312-0320]: bemix clunk grypt vozhd waqfs
+thread #055   chunk[0440-0448]: blunk cimex grypt vozhd waqfs
+thread #051   chunk[0408-0416]: bling jumpy treck vozhd waqfs
+thread #068   chunk[0544-0552]: brick glent jumpy vozhd waqfs
+thread #071   chunk[0568-0576]: brung cylix kempt vozhd waqfs
+thread #103   chunk[0824-0832]: chunk fjord gymps vibex waltz
+thread #110   chunk[0880-0888]: clipt jumby kreng vozhd waqfs
+thread #202   chunk[1616-1624]: fjord gucks nymph vibex waltz
+thread #241   chunk[1928-1936]: glent jumby prick vozhd waqfs
+thread #306   chunk[2448-2456]: jumby pling treck vozhd waqfs
 
 Finished after 11,844,572,947 iterations in 1672.35 milliseconds
 ```
@@ -39,6 +42,7 @@ For example:
 `hello` = 8th, 5th, 12th, and 14th bits are set to 1. Only 4 bits are set for hello, which will be handy later.
 
 This allows us to very efficiently filter out words that:
+
 **1. Contain duplicate characters.**
 Words that have a bitcount of `< 5` are filtered out.
 
@@ -86,20 +90,32 @@ Initially I divided the search into `n` pieces and give them to `n` threads. Som
 
 Now every thread gets a small fixed range to go through. Once a thread finishes its chunk, a new thread is created to start working on the next unexplored chunk. Number of threads is always kept at maximum.
 
-The program accepts arguments to play around with the number of threads and how many combinations a single thread should check. The search is divided by telling a thread how many words it should check as a first-word. Meaning, if a thread should only check the first `8` words, it will check all 5 word combinations where the first word is either the 1st, 2nd, 3rd, ..., or 8th word in the word list. (With optimizations).
+The program accepts arguments to play around with the number of threads and how many combinations a single thread should check. The search is divided by telling a thread how many words it should check as a first-word. Meaning, if a thread should only check some arbitrary `8` words, it will check all 5 word combinations where the first word is either the 1st, 2nd, 3rd, ..., or 8th word given to the thread.
 
 # Running
 
-```
-make && ./wordle
-```
-
-options:
+### Compiling
 
 ```
-./wordle -t 16 -w 12
+git clone https://github.com/Lukakva/wordle.c
+cd wordle.c && make
 ```
 
-Where `-t` is number of max threads and `-w` is number of words to check per thread. (See the multithreading section for a better explanation).
+### Usage
 
-The thread count should remain close to the number of cores on the machine, however the word count should be kept relatively small, under ~24. This way, a thread if there is a certain section which requires a lot of combinations to be checked (due to the nature of the words in that section), threads can divide them up, instead of some unlucky thread being stuck on that portion.
+```
+$ ./wordle -h
+usage: ./wordle [-t thread] [-w words_per_thread] [-s] [-h]
+
+-h help
+
+-s silent mode, only print the results
+
+-t threads
+    max number of threads running at a time
+
+-w words_per_thread
+    number words each thread should check.
+    -w 8 would tell thread to pick 8 words and try
+    all combinations where either of these 8 words are the word #1
+```

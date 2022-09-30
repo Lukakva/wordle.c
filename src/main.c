@@ -8,18 +8,23 @@
 #include <sys/time.h>
 
 /**
+ * Default options.
+ *
  * These values are determined from the `time.js` / `time.txt` output.
  * These work the best for my 8 core machine.
  */
+static int VERBOSE = 1;
 static int MAX_THREADS = 8;
 static int WORDS_PER_THREAD = 10;
 
 // Count of all words that we're working with
 static int word_count = 0;
 static word_t *all_words = NULL;
-// Count of all words that were in the words file (just for fun)
-static int words_encountered = 0;
 
+/**
+ * The thread itself. Given a thread argument, which tells the thread the range
+ * to search through.
+ */
 static void* thread(void *arg) {
     thread_arg_t *data = (thread_arg_t *) arg;
     unsigned long long int work_done = 0;
@@ -85,17 +90,28 @@ static void* thread(void *arg) {
                             continue;
                         }
 
-                        printf(
-                            "thread #%03d   chunk[%04d-%04d]: %s %s %s %s %s\n",
-                            data->id,
-                            data->start,
-                            data->end,
-                            word_1.str,
-                            word_2.str,
-                            word_3.str,
-                            word_4.str,
-                            word_5.str
-                        );
+                        if (VERBOSE) {
+                            printf(
+                                "thread #%03d   chunk[%04d-%04d]: %s %s %s %s %s\n",
+                                data->id,
+                                data->start,
+                                data->end,
+                                word_1.str,
+                                word_2.str,
+                                word_3.str,
+                                word_4.str,
+                                word_5.str
+                            );
+                        } else {
+                            printf(
+                                "%s %s %s %s %s\n",
+                                word_1.str,
+                                word_2.str,
+                                word_3.str,
+                                word_4.str,
+                                word_5.str
+                            );
+                        }
                     }
                 }
             }
@@ -121,13 +137,39 @@ static void* thread(void *arg) {
 
 static void parse_options(int argc, char *argv[]) {
     char ch;
-    while ((ch = getopt(argc, argv, "t:w:")) != -1) {
-        if (ch == 't') {
-            MAX_THREADS = atoi(optarg);
-        }
+    while ((ch = getopt(argc, argv, "t:w:hs")) != -1) {
+        switch (ch) {
+            case 't':
+                MAX_THREADS = atoi(optarg);
+                break;
 
-        if (ch == 'w') {
-            WORDS_PER_THREAD = atoi(optarg);
+            case 'w':
+                WORDS_PER_THREAD = atoi(optarg);
+                break;
+
+            case 's':
+                VERBOSE = 0;
+                break;
+            
+            case 'h':
+            default:
+                fprintf(
+                    stderr,
+                    "usage: ./wordle [-t thread] [-w words_per_thread] [-s] [-h]\n\n"
+
+                    "-h help\n\n"
+
+                    "-s silent mode, only print the results\n\n"
+
+                    "-t threads\n"
+                    "    max number of threads running at a time\n\n"
+
+                    "-w words_per_thread\n"
+                    "    number words each thread should check.\n"
+                    "    -w 8 would tell thread to pick 8 words and try\n"
+                    "    all combinations where either of these 8 words are the word #1\n"
+                );
+                exit(ch == '?' ? EXIT_FAILURE : EXIT_SUCCESS);
         }
     }
 }
@@ -147,22 +189,28 @@ int main(int argc, char *argv[]) {
     clock_gettime(CLOCK_REALTIME, &start);
 
     parse_options(argc, argv);
-    load_words(&all_words, &word_count, &words_encountered);
     thread_manager_init(MAX_THREADS);
+    word_results_t word_results = load_words();
 
-    printf(
-        "using %d words out of the %d total words in the file.\n",
-         word_count,
-         words_encountered
-    );
+    all_words = word_results.all_words;
+    word_count = word_results.word_count;
 
-    printf(
-        "starting processing: max_threads = %d, words_per_thread = %d\n",
-        MAX_THREADS,
-        WORDS_PER_THREAD
-    );
+    if (VERBOSE) {
+        printf(
+            "Loading words done...\n"
+            "Encountered %d hashmap collisions while filtering out anagrams.\n"
+            "Left with %d usable words out of the %d total words in the file.\n\n",
+            word_results.collisions,
+            word_count,
+            word_results.words_encountered
+        );
 
-    putchar('\n');
+        printf(
+            "Starting processing: max_threads = %d, words_per_thread = %d\n\n",
+            MAX_THREADS,
+            WORDS_PER_THREAD
+        );
+    }
 
     /**
      * The whole search space is divided into chunks now, since we're using
@@ -218,9 +266,11 @@ int main(int argc, char *argv[]) {
 
     long delta = (end.tv_sec * 1E9 + end.tv_nsec) - (start.tv_sec * 1E9 + start.tv_nsec);
 
-    printf("\nFinished after ");
-    print_number(thread_manager.work_done);
-    printf(" iterations in %.2f milliseconds\n", delta / 1E6F);
+    if (VERBOSE) {
+        printf("\nFinished after ");
+        print_number(thread_manager.work_done);
+        printf(" iterations in %.2f milliseconds\n", delta / 1E6F);
+    }
 
     return 0;
 }

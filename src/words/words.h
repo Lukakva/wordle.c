@@ -21,16 +21,34 @@ typedef struct {
 } word_t;
 
 /**
+ * A struct that is encapsulates the results from the `load_words` function call.
+ */
+typedef struct {
+    /**
+     * A dynamically allocated array of all the words.
+     * Includes only filtered words.
+     */
+    word_t *all_words;
+
+    /** Word count. */
+    int word_count;
+
+    /** Total words encountered in the file. */
+    int words_encountered;
+
+    /**
+     * Hashmap collisions when filtering out the anagrams.
+     */
+    int collisions;
+} word_results_t;
+
+/**
  * Reads words from a file, allocates memory for them,
  * filters them so that there are no duplicate letter words,
  * and no anagrams, and generates their numeric representations
  * to simplify checking for overlaps.
- * 
- * @param all_words Pointer to an array. A pointer to the allocated array will be put here. Like getline()
- * @param word_count Pointer to a number. Number of words will be put in here.
- * @param words_encountered Pointer to a number. Number of total words read from a file will be put here.
  */
-void load_words(word_t **all_words, int *word_count, int *words_encountered);
+word_results_t load_words();
 
 /**
  * Cleanup.
