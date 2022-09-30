@@ -165,7 +165,7 @@ static void parse_options(int argc, char *argv[]) {
                     "    max number of threads running at a time\n\n"
 
                     "-w words_per_thread\n"
-                    "    number words each thread should check.\n"
+                    "    number of words each thread should check.\n"
                     "    -w 8 would tell thread to pick 8 words and try\n"
                     "    all combinations where either of these 8 words are the word #1\n"
                 );

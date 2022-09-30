@@ -24,10 +24,11 @@ function time(t, w) {
     return total / n;
 }
 
-const values = [1, 2, 4, 8, 10, 12, 16, 24, 32, 48, 64, 96, 128, 256, 512, 1024];
+const tValues = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
+const wValues = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16];
 
-values.forEach(t => {
-    values.forEach(w => {
+tValues.forEach(t => {
+    wValues.forEach(w => {
         const result = time(t, w);
         times.push({
             t,
@@ -37,4 +38,5 @@ values.forEach(t => {
     })
 })
 
-console.log(JSON.stringify(times, null, 4))
+times.sort((a, b) => a.time - b.time);
+console.log(JSON.stringify(times, null, 4));
