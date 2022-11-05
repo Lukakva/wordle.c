@@ -48,9 +48,6 @@ typedef struct {
     pthread_mutex_t mutex;
 } thread_manager_t;
 
-/** The thread manager. */
-thread_manager_t thread_manager;
-
 /** Locks the thread_manager mutex. */
 void mutex_lock();
 
@@ -63,6 +60,11 @@ void mutex_unlock();
  * @param max_threads Maximum number of threads.
  */
 void thread_manager_init(int max_threads);
+
+/**
+ * Cleanup.
+ */
+void thread_manager_cleanup();
 
 /**
  * Creates a thread. MUST BE CALLED after acquiring a mutex lock

@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <sys/time.h>
 
+extern thread_manager_t thread_manager;
+
 /**
  * Default options.
  *
@@ -261,6 +263,7 @@ int main(int argc, char *argv[]) {
     mutex_wait_for_all_threads_to_finish();
     mutex_unlock();
     cleanup_words(all_words, word_count);
+    thread_manager_cleanup();
 
     clock_gettime(CLOCK_REALTIME, &end);
 

@@ -117,9 +117,9 @@ word_results_t load_words() {
         exit(EXIT_FAILURE);
     }
 
-    word_t *words = (word_t *) malloc(WORDS_PER_ALLOC * sizeof(word_t));
+    word_t *words = (word_t *) calloc(WORDS_PER_ALLOC, sizeof(word_t));
     if (words == NULL) {
-        perror(NULL);
+        perror("calloc");
         exit(EXIT_FAILURE);
     }
 
@@ -152,7 +152,7 @@ word_results_t load_words() {
             // allocate another chunk of words
             words = realloc(words, (allocated + WORDS_PER_ALLOC) * sizeof(word_t));
             if (words == NULL) {
-                perror(NULL);
+                perror("realloc");
                 exit(EXIT_FAILURE);
             }
 
@@ -186,9 +186,9 @@ word_results_t load_words() {
      */
     int total = i;
     for (int i = 0; i < total; i++) {
-        uint16_t *neighbors = (uint16_t *) malloc((total - i - 1) * sizeof(uint16_t));
+        uint16_t *neighbors = (uint16_t *) calloc(total - i - 1, sizeof(uint16_t));
         if (neighbors == NULL) {
-            perror("malloc");
+            perror("calloc");
             exit(EXIT_FAILURE);
         }
 

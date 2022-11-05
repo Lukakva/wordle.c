@@ -2,7 +2,8 @@
 #include <stdio.h>
 #include <string.h>
 
-thread_manager_t thread_manager = {0};
+/** The thread manager. */
+thread_manager_t thread_manager;
 
 void mutex_lock() {
     if (pthread_mutex_lock(&thread_manager.mutex) == -1) {
@@ -45,6 +46,25 @@ void thread_manager_init(int max_threads) {
     }
 }
 
+void thread_manager_cleanup() {
+    free(thread_manager.thread_args);
+
+    if (pthread_mutex_destroy(&thread_manager.mutex) == -1) {
+        perror("pthread_mutex_destroy");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_cond_destroy(&thread_manager.can_create_thread) == -1) {
+        perror("pthread_cond_destroy");
+        exit(EXIT_FAILURE);
+    }
+
+    if (pthread_cond_destroy(&thread_manager.all_threads_finished) == -1) {
+        perror("pthread_cond_destroy");
+        exit(EXIT_FAILURE);
+    }
+}
+
 pthread_t create_thread(thread_arg_t arg, void *thread(void *)) {
     // Some thread finished, we can use this part of the heap now.
     thread_arg_t *free_thread_arg = NULL;
@@ -68,7 +88,7 @@ pthread_t create_thread(thread_arg_t arg, void *thread(void *)) {
 
     pthread_t tid;
     if (pthread_create(&tid, NULL, thread, free_thread_arg) == -1) {
-        perror(NULL);
+        perror("pthread_create");
         exit(EXIT_FAILURE);
     }
 
