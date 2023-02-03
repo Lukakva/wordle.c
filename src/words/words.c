@@ -133,10 +133,9 @@ word_results_t load_words() {
     // Total words encountered in a file, even unused ones
     int total_words = 0;
 
-    int nread;
-    char *line = NULL;
-    size_t lineSize = 0;
-    while ((nread = getline(&line, &lineSize, file)) != -1) {
+    char line[6];
+    while (!feof(file)) {
+        size_t nread = fread(line, sizeof(char), sizeof(line), file);
         if (line[nread - 1] == '\n') {
             line[nread - 1] = '\0';
         }
@@ -173,8 +172,6 @@ word_results_t load_words() {
 
         i++;
     }
-
-    free(line);
 
     /**
      * Section below does the following:
