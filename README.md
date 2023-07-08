@@ -86,7 +86,7 @@ For every such word `b`, another list is used which enables us to find a word `c
 
 # Multithreading
 
-Initially I divided the search into `n` pieces and give them to `n` threads. Some threads finished much earlier, since some regions contain words that are much easier to determine as useless, and can be skipped.
+Initially I divided the search into `n` pieces and gave them to `n` threads. Some threads finished much earlier, since some regions contain words that are much easier to determine as useless, and can be skipped.
 
 Now every thread gets a small fixed range to go through. Once a thread finishes its chunk, a new thread is created to start working on the next unexplored chunk. Number of threads is always kept at maximum.
 
