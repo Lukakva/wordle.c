@@ -138,7 +138,7 @@ static void* thread(void *arg) {
 }
 
 static void parse_options(int argc, char *argv[]) {
-    char ch;
+    int ch;
     while ((ch = getopt(argc, argv, "t:w:hs")) != -1) {
         switch (ch) {
             case 't':
