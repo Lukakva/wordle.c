@@ -84,6 +84,7 @@ static void* thread(void *arg) {
                     uint32_t n123 = n12 | n3;
                     for (int m = 0; m < word_4.neighbors_n; m++) {
                         int index_5 = word_4.neighbors[m];
+
                         word_t word_5 = all_words[index_5];
                         uint32_t n5 = word_5.numeric;
                         work_done++;
@@ -218,7 +219,7 @@ int main(int argc, char *argv[]) {
      * The whole search space is divided into chunks now, since we're using
      * WORDS_PER_THREAD.
      * Each thread gets passed a chunk to process, size of WORDS_PER_THREAD.
-     * So we want to process all chunks an we want to keep
+     * So we want to process all chunks and we want to keep
      * re-creating threads until all chunks are processed.
      */
     int next_chunk_index = 0;
