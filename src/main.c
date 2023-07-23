@@ -35,7 +35,6 @@ static void* thread(void *arg) {
         // Grab the first word
         word_t word_1 = all_words[i];
         uint32_t n1 = word_1.numeric;
-        work_done++;
 
         // Only iterate through the words that we know don't overlap with the first word
         for (int j = 0; j < word_1.neighbors_n; j++) {
@@ -44,7 +43,6 @@ static void* thread(void *arg) {
             // Retrieve that word
             word_t word_2 = all_words[index_2];
             uint32_t n2 = word_2.numeric;
-            work_done++;
 
             for (int k = 0; k < word_2.neighbors_n; k++) {
                 // Grab the index for the third word
@@ -52,7 +50,6 @@ static void* thread(void *arg) {
 
                 word_t word_3 = all_words[index_3];
                 uint32_t n3 = word_3.numeric;
-                work_done++;
 
                 // Check if the first and the third word overlap in characters
                 if ((n1 & n3) != 0) {
@@ -75,7 +72,6 @@ static void* thread(void *arg) {
 
                     word_t word_4 = all_words[index_4];
                     uint32_t n4 = word_4.numeric;
-                    work_done++;
 
                     if ((n12 & n4) != 0) {
                         continue;
@@ -271,9 +267,10 @@ int main(int argc, char *argv[]) {
     long delta = (end.tv_sec * 1E9 + end.tv_nsec) - (start.tv_sec * 1E9 + start.tv_nsec);
 
     if (VERBOSE) {
-        printf("\nFinished after ");
+        printf("\nFinished after %.2f milliseconds.\n", delta / 1E6F);
+        printf("Checked ");
         print_number(thread_manager.work_done);
-        printf(" iterations in %.2f milliseconds\n", delta / 1E6F);
+        printf(" five-word combination leaves.\n");
     }
 
     return 0;
