@@ -1,6 +1,6 @@
 # About
 
-A **multi-threaded C-based** solution to Matt Parker's Wordle problem. Solves the problem in less than 2 seconds (On an M1 Pro).
+A **multi-threaded C-based** solution to Matt Parker's Wordle problem. Solves the problem in less than 1 second (On an M1 Pro).
 
 ```
 $ ./wordle -t 10 -w 8
@@ -8,20 +8,21 @@ Loading words done...
 Encountered 218 hashmap collisions while filtering out anagrams.
 Left with 4387 usable words out of the 12947 total words in the file.
 
-Starting processing: max_threads = 10, words_per_thread = 8
+Starting processing: max_threads = 8, words_per_thread = 10
 
-thread #039   chunk[0312-0320]: bemix clunk grypt vozhd waqfs
-thread #055   chunk[0440-0448]: blunk cimex grypt vozhd waqfs
-thread #051   chunk[0408-0416]: bling jumpy treck vozhd waqfs
-thread #068   chunk[0544-0552]: brick glent jumpy vozhd waqfs
-thread #071   chunk[0568-0576]: brung cylix kempt vozhd waqfs
-thread #103   chunk[0824-0832]: chunk fjord gymps vibex waltz
-thread #110   chunk[0880-0888]: clipt jumby kreng vozhd waqfs
-thread #202   chunk[1616-1624]: fjord gucks nymph vibex waltz
-thread #241   chunk[1928-1936]: glent jumby prick vozhd waqfs
-thread #306   chunk[2448-2456]: jumby pling treck vozhd waqfs
+thread #016   chunk[0160-0170]: bling treck waqfs jumpy vozhd
+thread #038   chunk[0380-0390]: pling treck waqfs jumby vozhd
+thread #047   chunk[0470-0480]: brick glent waqfs jumpy vozhd
+thread #056   chunk[0560-0570]: kreng clipt waqfs jumby vozhd
+thread #060   chunk[0600-0610]: fjord chunk vibex gymps waltz
+thread #060   chunk[0600-0610]: fjord gucks vibex nymph waltz
+thread #068   chunk[0680-0690]: prick glent waqfs jumby vozhd
+thread #164   chunk[1640-1650]: kempt brung waqfs cylix vozhd
+thread #209   chunk[2090-2100]: blunk waqfs cimex grypt vozhd
+thread #209   chunk[2090-2100]: clunk waqfs bemix grypt vozhd
 
-Finished after 11,844,572,947 iterations in 1672.35 milliseconds
+Finished after 821.00 milliseconds.
+Checked 649,362,243 five-word combination leaves.
 ```
 
 # Problem

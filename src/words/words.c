@@ -196,13 +196,7 @@ word_results_t load_words() {
      */
     for (int i = 0; i < total; i++) {
         uint16_t *neighbors = (uint16_t *) calloc(total - i - 1, sizeof(uint16_t));
-        bool *neighbors_lookup = (bool *) calloc(total, sizeof(bool));
-        if (neighbors == NULL || neighbors_lookup == NULL) {
-            perror("calloc");
-            exit(EXIT_FAILURE);
-        }
 
-        memset(neighbors_lookup, 0, sizeof(bool) * total);
         int n = 0;
         for (int j = i + 1; j < total; j++) {
             // If there is a bitwise overlap, they share a character
@@ -212,12 +206,10 @@ word_results_t load_words() {
 
             // Store the index of the compatible word
             neighbors[n++] = (uint16_t) j;
-            neighbors_lookup[j] = true;
         }
 
         words[i].neighbors = neighbors;
         words[i].neighbors_n = n;
-        words[i].neighbors_lookup = neighbors_lookup;
     }
 
     word_results_t results = {

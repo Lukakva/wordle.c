@@ -16,7 +16,6 @@ typedef struct {
      * overlap with this word.
      */
     uint16_t *neighbors;
-    bool *neighbors_lookup;
     
     /** Length of said array. */
     uint16_t neighbors_n;
