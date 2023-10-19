@@ -35,6 +35,8 @@ In other words, 5 words, 25 unique letters in total. Therefore no duplicate lett
 
 # Solution
 
+A backtracking algorithm is employed. However, a small discussion about data representation first.
+
 Since there 26 letters in the alphabet, we can use a 32bit bit-field to represent
 what characters each word contains.
 
@@ -82,7 +84,7 @@ assert((fjord_clunk) == 0b00000000000100100110111000101100);
 
 ## Optimization
 
-In order to better eliminate combinations and skip over some iterations, every word `a` gets an array of all the possible other words that don't share letters with `a`. This way, if a certain word `a` is chosen to be in a first position, only the words that don't overlap with `a` are checked.
+On top of backtracking, further combinations are eliminated by pre-calculating non-overlapping word pairs. Every word `a` gets an array of all the possible other words that don't share letters with `a`. This way, if a certain word `a` is chosen to be in a first position, only the words that don't overlap with `a` are checked.
 For every such word `b`, another list is used which enables us to find a word `c` which has no overlap with `b`. Therefore, the only thing that is needed to be checked is wether `c` overlaps with `a`, and so on. For every word at position `n`, the word definitely doesn't overlap with the word at `n-1`, however it may overlap with words at `1..n-2`.
 
 # Multithreading
